@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-ARDUINO_LIB_FOLDER="~/Documents/Arduino/libraries"
+ARDUINO_LIB_FOLDER="/Users/Alexander/Documents/Arduino/libraries"
 
 function quiet_cd() {
-	cd "$@" >/dev/null || ordie "Error: failed to cd to $*!"
+	cd "$@" >/dev/null || ordie "failed to cd to $*!"
 }
 
 function ordie() {
@@ -45,8 +45,15 @@ function update() {
 		# For every folder, look for git file and pull if it exists
 		for dir in $(ls -d */)
 		do
-			quiet_cd "$dir" && find .git && git pull && echo "$dir was successfully updated" || echo "Could not update $dir because it is not a git repo, or there was an error pulling."
+			echo "Updating $dir" 
+			# CD to each library
 			quiet_cd "$ARDUINO_LIB_FOLDER"
+			quiet_cd "$dir" || { orer "Something is causing ls -d * to list things that arent directories, report a bug on GALMs git repo."; continue }
+			# Check if its a git repo
+			find .git || { orer "$dir is not a git repo, skipping."; continue }
+			# Update it
+			git pull || { orer "The library, $dir, is a git repo but can not be pulled."; continue }
+			echo "Successfully updated library $dir";
 		done
 	else
 		echo "Updating $@"
@@ -55,7 +62,7 @@ function update() {
 		quiet_cd "$ARDUINO_LIB_FOLDER"
 		quiet_cd "$@"
 		find .git || ordie "$@ is not a git repo."
-		git pull && echo "$dir was successfully updated" || echo "Could not update $dir because of a pull error"
+		git pull && echo "$dir was successfully updated"
 	fi
 }
 
@@ -76,7 +83,7 @@ case "$GALM_COMMAND" in
 	ls)		GALM_COMMAND="list";;
 esac
 
-if [ "$GALM_ARG_COUNT" > 1 ]
+if [ "$GALM_ARG_COUNT" >= 2 ]
 then
 	GALM_UPDATE_WHICH="$1"
 else
